@@ -1,0 +1,20 @@
+{
+    "ISIC2017": {
+        "model": "Involuted SIMAN UNet",
+        "dataset": "ISIC2017",
+        "mIoU": 81.83,
+        "DSC": 88.96,
+        "Sensitivity": 89.38,
+        "Specificity": 98.0,
+        "evaluation_date": "2026-01-13T08:51:00.800508"
+    },
+    "ISIC2018": {
+        "model": "Involuted SIMAN UNet",
+        "dataset": "ISIC2018",
+        "mIoU": 81.45,
+        "DSC": 88.78,
+        "Sensitivity": 90.62,
+        "Specificity": 97.36,
+        "evaluation_date": "2026-01-13T08:51:00.800519"
+    }
+}

@@ -1,0 +1,24 @@
+============================================================
+Involuted SIMAN UNet Evaluation Results
+============================================================
+
+Dataset: ISIC2017
+Model: Involuted SIMAN UNet
+Evaluation Date: 2026-01-13T08:51:00.800508
+------------------------------------------------------------
+mIoU (Mean Intersection over Union): 81.83%
+DSC (Dice Similarity Coefficient):   88.96%
+Sensitivity (Recall):                89.38%
+Specificity:                         98.00%
+
+
+Dataset: ISIC2018
+Model: Involuted SIMAN UNet
+Evaluation Date: 2026-01-13T08:51:00.800519
+------------------------------------------------------------
+mIoU (Mean Intersection over Union): 81.45%
+DSC (Dice Similarity Coefficient):   88.78%
+Sensitivity (Recall):                90.62%
+Specificity:                         97.36%
+
+
