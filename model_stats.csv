@@ -1,0 +1,2 @@
+model,input_shape,device,total_params,trainable_params,gflops_single_forward
+UNetInvSimAM,"(1, 1, 64, 64)",cpu,8192514,8192514,1.750412
