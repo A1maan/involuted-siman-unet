@@ -1,0 +1,24 @@
+============================================================
+ConvNeXt SIMAN UNet Evaluation Results
+============================================================
+
+Dataset: ISIC2017
+Model: ConvNeXt SIMAN UNet
+Evaluation Date: 2026-04-12T19:48:31.135010
+------------------------------------------------------------
+mIoU (Mean Intersection over Union): 81.46%
+DSC (Dice Similarity Coefficient):   88.59%
+Sensitivity (Recall):                90.39%
+Specificity:                         97.99%
+
+
+Dataset: ISIC2018
+Model: ConvNeXt SIMAN UNet
+Evaluation Date: 2026-04-12T19:48:31.135011
+------------------------------------------------------------
+mIoU (Mean Intersection over Union): 80.75%
+DSC (Dice Similarity Coefficient):   88.40%
+Sensitivity (Recall):                91.65%
+Specificity:                         97.00%
+
+

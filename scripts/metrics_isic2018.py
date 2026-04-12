@@ -9,11 +9,20 @@ import numpy as np
 import sys
 import os
 
-# Add parent directory to path to import UNetInvSimAM from root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path to import models from root
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _project_root)
+# Add experiment-models directory for ConvNeXt_SIMAM_UNET
+sys.path.insert(0, os.path.join(_project_root, "experiment-models"))
 
-# Import UNetInvSimAM
-from Involuted_SIMAN_UNET import UNetInvSimAM
+import argparse
+import importlib
+
+MODEL_REGISTRY = {
+    "involuted":   ("Involuted_SIMAN_UNET",      "UNetInvSimAM"),
+    "convnext":    ("ConvNeXt_SIMAM_UNET",        "UNetConvNeXtSimAM"),
+    "deformcnext": ("DeformConvNeXt_SIMAM_UNET",  "UNetDeformConvNeXtSimAM"),
+}
 
 from PIL import Image
 from tqdm import tqdm
@@ -214,7 +223,7 @@ def evaluate_model_metrics(model, test_loader, device):
     return avg_metrics
 
 
-base_dir_2018 = "/home/almaan/datasets/ISIC2018"
+base_dir_2018 = "../../datasets/ISIC2018"
 
 # Training transforms with augmentation (using albumentations)
 transform_train = A.Compose([
@@ -250,12 +259,18 @@ print("Test size:", len(test_dataset_2018))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-# Initialize model
-model = UNetInvSimAM(in_channels=3, num_classes=1, base_c=64, bilinear=True).to(device)
+parser = argparse.ArgumentParser(description="Evaluate on ISIC2018")
+parser.add_argument("--model", choices=list(MODEL_REGISTRY.keys()), default="convnext",
+                    help="Model architecture to evaluate (default: convnext)")
+args = parser.parse_args()
+
+module_name, class_name = MODEL_REGISTRY[args.model]
+module = importlib.import_module(module_name)
+model = getattr(module, class_name)(in_channels=3, num_classes=1, base_c=64, bilinear=True).to(device)
 
 # Load pretrained weights (path relative to project root)
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-pretrained_weights_path = os.path.join(project_root, "weights/best_involuted_siman_unet_isic2018.pth")
+pretrained_weights_path = os.path.join(project_root, f"weights/best_{args.model}_unet_isic2018.pth")
 if os.path.exists(pretrained_weights_path):
     print(f"Loading pretrained weights from: {pretrained_weights_path}")
     model.load_state_dict(torch.load(pretrained_weights_path, map_location=device))
@@ -336,9 +351,9 @@ for idx in range(n_samples):
 
 plt.tight_layout()
 # Save plots to project root plots directory
-plots_dir = os.path.join(project_root, "plots")
+plots_dir = os.path.join(project_root, "plots", args.model)
 os.makedirs(plots_dir, exist_ok=True)
-plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_predictions_with_metrics_isic2018.png'), dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(plots_dir, f'{args.model}_unet_predictions_with_metrics_isic2018.png'), dpi=300, bbox_inches='tight')
 plt.show()
 
 print("\n" + "="*60)

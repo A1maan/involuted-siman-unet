@@ -1,5 +1,10 @@
+import os
 import matplotlib.pyplot as plt
 import numpy as np
+
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+plots_dir = os.path.join(_project_root, "plots", "involuted")
+os.makedirs(plots_dir, exist_ok=True)
 
 # Involuted SIMAN UNet Results from ISIC2017 and ISIC2018 evaluations
 isic2017_results = {
@@ -55,8 +60,8 @@ ax.set_ylim(0, 105)
 ax.set_facecolor('#F8F9FA')
 
 plt.tight_layout()
-plt.savefig('involuted_siman_unet_isic_comparison_metrics.png', dpi=300, bbox_inches='tight', facecolor='white')
-print("📊 Comparison plot saved as 'involuted_siman_unet_isic_comparison_metrics.png'")
+plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_isic_comparison_metrics.png'), dpi=300, bbox_inches='tight', facecolor='white')
+print(f"📊 Comparison plot saved to {plots_dir}")
 plt.show()
 
 # Print summary comparison
@@ -104,8 +109,8 @@ ax2.axhline(y=0, color='black', linestyle='-', alpha=0.3)
 ax2.set_facecolor('#F8F9FA')
 
 plt.tight_layout()
-plt.savefig('involuted_siman_unet_isic_performance_differences.png', dpi=300, bbox_inches='tight', facecolor='white')
-print("📊 Performance difference plot saved as 'involuted_siman_unet_isic_performance_differences.png'")
+plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_isic_performance_differences.png'), dpi=300, bbox_inches='tight', facecolor='white')
+print(f"📊 Performance difference plot saved to {plots_dir}")
 plt.show()
 
 # Create a comprehensive comparison with MSGU-Net
@@ -163,8 +168,8 @@ ax3.set_ylim(0, 105)
 ax3.set_facecolor('#F8F9FA')
 
 plt.tight_layout()
-plt.savefig('involuted_siman_unet_vs_msgunet_comparison.png', dpi=300, bbox_inches='tight', facecolor='white')
-print("📊 Model comparison plot saved as 'involuted_siman_unet_vs_msgunet_comparison.png'")
+plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_vs_msgunet_comparison.png'), dpi=300, bbox_inches='tight', facecolor='white')
+print(f"📊 Model comparison plot saved to {plots_dir}")
 plt.show()
 
 # Print comprehensive analysis

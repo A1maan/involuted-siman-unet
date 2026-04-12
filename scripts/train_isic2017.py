@@ -10,13 +10,22 @@ import sys
 import os
 
 # Add parent directory to path to import ESEUNet from root
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _project_root)
+# Add experiment-models directory for ConvNeXt_SIMAM_UNET
+sys.path.insert(0, os.path.join(_project_root, "experiment-models"))
 # Add scripts directory to path for loss_functions
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import models and loss functions
-from Involuted_SIMAN_UNET import UNetInvSimAM
+import argparse
+import importlib
 from loss_functions import CombinedDeepSupervisionLoss
+
+MODEL_REGISTRY = {
+    "involuted":   ("Involuted_SIMAN_UNET",      "UNetInvSimAM"),
+    "convnext":    ("ConvNeXt_SIMAM_UNET",        "UNetConvNeXtSimAM"),
+    "deformcnext": ("DeformConvNeXt_SIMAM_UNET",  "UNetDeformConvNeXtSimAM"),
+}
 
 from PIL import Image
 from tqdm import tqdm
@@ -120,7 +129,7 @@ class ISICSegmentationDataset(Dataset):
         return img, mask
 
 
-base_dir_2017 = "/home/almaan/datasets/ISIC2017"
+base_dir_2017 = "../../datasets/ISIC2017"
 
 # Training transforms with augmentation (matching MSGU-Net)
 transform_train = A.Compose([
@@ -146,8 +155,8 @@ test_dataset_2017 = ISICSegmentationDataset(
     base_dir=base_dir_2017, split="test", transform=transform_test, seed=SEED
 )
 
-train_loader_2017 = DataLoader(train_dataset_2017, batch_size=8, shuffle=True, drop_last=True, worker_init_fn=seed_worker)
-test_loader_2017 = DataLoader(test_dataset_2017, batch_size=8, shuffle=False, worker_init_fn=seed_worker)
+train_loader_2017 = DataLoader(train_dataset_2017, batch_size=4, shuffle=True, drop_last=True, worker_init_fn=seed_worker)
+test_loader_2017 = DataLoader(test_dataset_2017, batch_size=4, shuffle=False, worker_init_fn=seed_worker)
 
 print("Train size:", len(train_dataset_2017))
 print("Test size:", len(test_dataset_2017))
@@ -155,21 +164,6 @@ print("Test size:", len(test_dataset_2017))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
-
-# Initialize UNetInvSimAM (Involuted SIMAN UNet)
-model = UNetInvSimAM(
-    in_channels=3,
-    num_classes=1,
-    base_c=64,
-    bilinear=True
-).to(device)
-
-# Use same loss as MSGU-Net
-criterion = nn.BCEWithLogitsLoss()   # binary segmentation
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.5, patience=3, min_lr=1e-5
-)
 
 
 def train_epoch(loader, model, criterion, optimizer, device, epoch=None, n_epochs=None):
@@ -214,6 +208,22 @@ def eval_epoch(loader, model, criterion, device, epoch=None, n_epochs=None):
 
 if __name__ == "__main__":
     # ISIC2017 Training + Testing
+    parser = argparse.ArgumentParser(description="Train on ISIC2017")
+    parser.add_argument("--model", choices=list(MODEL_REGISTRY.keys()), default="convnext",
+                        help="Model architecture to train (default: convnext)")
+    args = parser.parse_args()
+
+    module_name, class_name = MODEL_REGISTRY[args.model]
+    module = importlib.import_module(module_name)
+    model = getattr(module, class_name)(
+        in_channels=3, num_classes=1, base_c=64, bilinear=True
+    ).to(device)
+
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=3, min_lr=1e-5
+    )
 
     # Get project root directory
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -225,7 +235,7 @@ if __name__ == "__main__":
     test_losses = []
 
     best_loss = float("inf")
-    best_model_path = os.path.join(weights_dir, "best_involuted_siman_unet_isic2017.pth")
+    best_model_path = os.path.join(weights_dir, f"best_{args.model}_unet_isic2017.pth")
 
     for epoch in range(n_epochs):
         train_loss = train_epoch(train_loader_2017, model, criterion, optimizer, device, epoch, n_epochs)
@@ -243,7 +253,7 @@ if __name__ == "__main__":
             print(f"✅ Saved best model at epoch {epoch+1} with Test Loss: {test_loss:.4f}")
 
     # Optionally save final model too
-    final_model_path = os.path.join(weights_dir, "involuted_siman_unet_isic2017.pth")
+    final_model_path = os.path.join(weights_dir, f"{args.model}_unet_isic2017.pth")
     torch.save(model.state_dict(), final_model_path)
     print("💾 Training complete, final model saved.")
 
@@ -269,14 +279,14 @@ if __name__ == "__main__":
         plt.axis('off')
                 # Prediction
         plt.subplot(n_samples, 3, idx * 3 + 3)
-        plt.title("Involuted SIMAN UNet Prediction")
+        plt.title(f"{class_name} Prediction")
         plt.imshow(preds[idx,0].cpu().numpy() > 0.5, cmap="gray")
         plt.axis('off')
 
     plt.tight_layout()
-    plots_dir = os.path.join(project_root, "plots")
+    plots_dir = os.path.join(project_root, "plots", args.model)
     os.makedirs(plots_dir, exist_ok=True)
-    plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_predictions_grid_isic2017.png'))
+    plt.savefig(os.path.join(plots_dir, f'{args.model}_unet_predictions_grid_isic2017.png'))
     plt.show()
 
     # After training cell (after training loop and model saving)
@@ -285,9 +295,9 @@ if __name__ == "__main__":
     plt.plot(test_losses, label="Test Loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.title("Involuted SIMAN UNet - Loss Curve (ISIC2017)")
+    plt.title(f"{class_name} - Loss Curve (ISIC2017)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(plots_dir, 'involuted_siman_unet_loss_curve_isic2017.png'))
+    plt.savefig(os.path.join(plots_dir, f'{args.model}_unet_loss_curve_isic2017.png'))
 
 

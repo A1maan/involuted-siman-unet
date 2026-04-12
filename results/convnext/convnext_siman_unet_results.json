@@ -1,0 +1,20 @@
+{
+    "ISIC2017": {
+        "model": "ConvNeXt SIMAN UNet",
+        "dataset": "ISIC2017",
+        "mIoU": 81.46,
+        "DSC": 88.59,
+        "Sensitivity": 90.39,
+        "Specificity": 97.99,
+        "evaluation_date": "2026-04-12T19:48:31.135010"
+    },
+    "ISIC2018": {
+        "model": "ConvNeXt SIMAN UNet",
+        "dataset": "ISIC2018",
+        "mIoU": 80.75,
+        "DSC": 88.4,
+        "Sensitivity": 91.65,
+        "Specificity": 97.0,
+        "evaluation_date": "2026-04-12T19:48:31.135011"
+    }
+}

@@ -13,8 +13,17 @@ from albumentations.pytorch import ToTensorV2
 # Add experiments folder to path for imports
 experiments_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, experiments_dir)
+# Add experiment-models directory for ConvNeXt_SIMAM_UNET
+sys.path.insert(0, os.path.join(experiments_dir, "experiment-models"))
 
-from Involuted_SIMAN_UNET import UNetInvSimAM
+import argparse
+import importlib
+
+MODEL_REGISTRY = {
+    "involuted":   ("Involuted_SIMAN_UNET",      "UNetInvSimAM"),
+    "convnext":    ("ConvNeXt_SIMAM_UNET",        "UNetConvNeXtSimAM"),
+    "deformcnext": ("DeformConvNeXt_SIMAM_UNET",  "UNetDeformConvNeXtSimAM"),
+}
 
 # Set random seed
 SEED = 42
@@ -106,13 +115,15 @@ transform_test = A.Compose([
 possible_paths_2017 = [
     "/home/almaan/datasets/ISIC2017",
     "/home/aminu_yusuf/msgunet/datasets/ISIC2017",
-    "/home/almaan/ISIC2017"
+    "/home/almaan/ISIC2017",
+    "../../datasets/ISIC2017"
 ]
 
 possible_paths_2018 = [
     "/home/almaan/datasets/ISIC2018",
     "/home/aminu_yusuf/msgunet/datasets/ISIC2018",
-    "/home/almaan/ISIC2018"
+    "/home/almaan/ISIC2018",
+    "../../datasets/ISIC2018"
 ]
 
 base_dir_2017 = None
@@ -165,14 +176,25 @@ print("\nLoading models...")
 project_root = experiments_dir
 
 # Involuted SIMAN UNet
-print("Loading Involuted SIMAN UNet...")
-repghost_model = UNetInvSimAM(in_channels=3, num_classes=1).to(device)
-repghost_2017_path = os.path.join(project_root, "weights/best_involuted_siman_unet_isic2017.pth")
+parser = argparse.ArgumentParser(description="Generate prediction visualizations")
+parser.add_argument("--model", choices=list(MODEL_REGISTRY.keys()), default="convnext",
+                    help="Model architecture to visualize (default: convnext)")
+args = parser.parse_args()
+
+module_name, class_name = MODEL_REGISTRY[args.model]
+module = importlib.import_module(module_name)
+
+plots_dir = os.path.join(experiments_dir, "plots", args.model)
+os.makedirs(plots_dir, exist_ok=True)
+
+print(f"Loading {class_name}...")
+repghost_model = getattr(module, class_name)(in_channels=3, num_classes=1).to(device)
+repghost_2017_path = os.path.join(project_root, f"weights/best_{args.model}_unet_isic2017.pth")
 
 # Load weights if available
 models_loaded = True
 for model_name, model, path in [
-    ("Involuted SIMAN UNet ISIC2017", repghost_model, repghost_2017_path),
+    (f"{class_name} ISIC2017", repghost_model, repghost_2017_path),
 ]:
     if os.path.exists(path):
         try:
@@ -191,7 +213,7 @@ if not models_loaded:
 # Generate predictions and visualizations
 # ========================
 
-def visualize_predictions(model, loader, dataset_name, save_prefix):
+def visualize_predictions(model, loader, dataset_name, save_prefix, model_label="UNet"):
     """Generate prediction visualizations with ground truth"""
     model.eval()
     
@@ -249,11 +271,11 @@ def visualize_predictions(model, loader, dataset_name, save_prefix):
         plt.title("Overlay\n(Red=Pred, Blue=GT, Magenta=Both)", fontsize=9, fontweight='bold')
         plt.axis('off')
     
-    plt.suptitle(f'Involuted SIMAN UNet Predictions vs Ground Truth - {dataset_name}', 
+    plt.suptitle(f'{model_label} Predictions vs Ground Truth - {dataset_name}', 
                  fontsize=14, fontweight='bold', y=0.995)
     plt.tight_layout()
     
-    save_path = f"{save_prefix}_involuted_siman_unet_predictions_vs_gt.png"
+    save_path = f"{save_prefix}_predictions_vs_gt.png"
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white')
     print(f"✅ Saved: {save_path}")
     plt.show()
@@ -270,7 +292,7 @@ print("="*70)
 print("\n📊 ISIC2017 Predictions vs Ground Truth...")
 try:
     visualize_predictions(repghost_model, test_loader_2017, 
-                         "ISIC2017", "involuted_siman_unet_isic2017")
+                         "ISIC2017", os.path.join(plots_dir, f"{args.model}_unet_isic2017"), model_label=class_name)
 except Exception as e:
     print(f"Error generating ISIC2017 visualizations: {e}")
     import traceback
@@ -279,7 +301,7 @@ except Exception as e:
 print("\n📊 ISIC2018 Predictions vs Ground Truth...")
 try:
     visualize_predictions(repghost_model, test_loader_2018, 
-                         "ISIC2018", "involuted_siman_unet_isic2018")
+                         "ISIC2018", os.path.join(plots_dir, f"{args.model}_unet_isic2018"), model_label=class_name)
 except Exception as e:
     print(f"Error generating ISIC2018 visualizations: {e}")
     import traceback

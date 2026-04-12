@@ -24,7 +24,6 @@ checkpoints/
 
 *.log
 logs/
-results/
 runs/
 events.out.tfevents*
 
